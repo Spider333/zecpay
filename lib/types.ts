@@ -6,6 +6,14 @@ export interface Employee {
   payoutCurrency: 'ZEC' | 'USDC';
   testTxSent: boolean;
   verified: boolean;
+  paid: boolean;
+}
+
+export interface PayrollSchedule {
+  startDate: string;       // ISO date
+  frequency: 'biweekly' | 'monthly' | 'custom';
+  customDays?: number;
+  lastProcessedDate?: string;
 }
 
 export interface PayrollBatch {
@@ -15,4 +23,5 @@ export interface PayrollBatch {
   zecUsdRate: number;
   rateLockTime: string;
   status: 'draft' | 'preview' | 'executed';
+  schedule?: PayrollSchedule;
 }
