@@ -14,6 +14,9 @@ interface Props {
   onTestMode: () => void;
   schedule?: PayrollSchedule;
   onOpenSchedule: () => void;
+  hasRoster?: boolean;
+  onSaveRoster?: () => void;
+  onQuickPay?: () => void;
 }
 
 function truncateAddr(addr: string): string {
@@ -21,7 +24,7 @@ function truncateAddr(addr: string): string {
   return `${addr.slice(0, 8)}...${addr.slice(-8)}`;
 }
 
-export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGenerate, onBack, onTestMode, schedule, onOpenSchedule }: Props) {
+export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGenerate, onBack, onTestMode, schedule, onOpenSchedule, hasRoster, onSaveRoster, onQuickPay }: Props) {
   const totalZec = getTotalZec(employees, zecUsdRate);
   const totalUsd = employees.reduce((s, e) => s + (e.currency === 'USD' ? e.amount : e.amount * zecUsdRate), 0);
   const due = schedule ? isPayrollDue(schedule) : false;
@@ -111,6 +114,15 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
         </div>
       </div>
 
+      {!hasRoster && onSaveRoster && (
+        <button
+          onClick={onSaveRoster}
+          className="w-full text-left text-xs text-zinc-500 hover:text-amber-400 transition py-1"
+        >
+          + Save these employees as your team
+        </button>
+      )}
+
       <div className="flex gap-3">
         <button
           onClick={onTestMode}
@@ -125,6 +137,15 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
           Skip Tests &amp; Generate URI
         </button>
       </div>
+
+      {onQuickPay && hasRoster && (
+        <button
+          onClick={onQuickPay}
+          className="w-full py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-400/30 text-green-400 font-medium rounded-lg text-sm transition"
+        >
+          Quick Pay — skip tests, go straight to payment
+        </button>
+      )}
     </div>
   );
 }

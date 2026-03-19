@@ -2,13 +2,15 @@
 
 import { useState, useCallback } from 'react';
 import { parseCSV, SAMPLE_CSV } from '@/lib/csv-parser';
-import { Employee } from '@/lib/types';
+import { Employee, RosterEmployee } from '@/lib/types';
 
 interface Props {
   onParsed: (employees: Employee[]) => void;
+  roster?: RosterEmployee[];
+  onLoadRoster?: () => void;
 }
 
-export default function CsvUpload({ onParsed }: Props) {
+export default function CsvUpload({ onParsed, roster, onLoadRoster }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
@@ -36,6 +38,14 @@ export default function CsvUpload({ onParsed }: Props) {
 
   return (
     <div className="space-y-4">
+      {roster && roster.length > 0 && onLoadRoster && (
+        <button
+          onClick={onLoadRoster}
+          className="w-full py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-400 font-semibold rounded-lg text-sm transition"
+        >
+          Use saved team ({roster.length} employee{roster.length !== 1 ? 's' : ''})
+        </button>
+      )}
       <div
         onDragOver={e => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}

@@ -1,24 +1,39 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Employee, PayrollBatch, PayrollSchedule } from '@/lib/types';
+import { Employee, PayrollBatch, PayrollSchedule, RosterEmployee, BatchRecord, ZecPayStore } from '@/lib/types';
 import { fetchZecPrice } from '@/lib/price';
 import { generateZip321Uri } from '@/lib/zip321';
+import { getTotalZec } from '@/lib/zip321';
+import { usdToZec } from '@/lib/price';
 import { encryptAndStore, decryptFromStore, clearStoredData } from '@/lib/encryption';
 import { isPayrollDue } from '@/lib/schedule';
+import { hashBatchRecord, downloadReceipt } from '@/lib/receipt';
+import { employeesToRoster, rosterToEmployees } from '@/lib/roster';
 import PasswordGate from '@/components/PasswordGate';
 import CsvUpload from '@/components/CsvUpload';
 import BatchPreview from '@/components/BatchPreview';
 import PaymentUri from '@/components/PaymentUri';
 import TestMode from '@/components/TestMode';
 import ScheduleConfig from '@/components/ScheduleConfig';
+import BatchHistory from '@/components/BatchHistory';
 
-type Screen = 'password' | 'upload' | 'preview' | 'testmode' | 'payment';
+type Screen = 'password' | 'upload' | 'preview' | 'testmode' | 'payment' | 'history';
+
+function isZecPayStore(data: unknown): data is ZecPayStore {
+  return typeof data === 'object' && data !== null && 'version' in data && (data as ZecPayStore).version === 1;
+}
+
+function isLegacyBatch(data: unknown): data is PayrollBatch {
+  return typeof data === 'object' && data !== null && 'employees' in data && !('version' in data);
+}
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>('password');
   const [password, setPassword] = useState('');
   const [batch, setBatch] = useState<PayrollBatch | null>(null);
+  const [roster, setRoster] = useState<RosterEmployee[]>([]);
+  const [history, setHistory] = useState<BatchRecord[]>([]);
   const [zecRate, setZecRate] = useState(0);
   const [rateLockTime, setRateLockTime] = useState('');
   const [uri, setUri] = useState('');
@@ -38,12 +53,28 @@ export default function Home() {
     }
   }, []);
 
-  const persistBatch = useCallback(async (updated: PayrollBatch) => {
-    setBatch(updated);
+  const persistStore = useCallback(async (
+    updatedBatch?: PayrollBatch | null,
+    updatedRoster?: RosterEmployee[],
+    updatedHistory?: BatchRecord[],
+  ) => {
+    const b = updatedBatch !== undefined ? updatedBatch : batch;
+    const r = updatedRoster !== undefined ? updatedRoster : roster;
+    const h = updatedHistory !== undefined ? updatedHistory : history;
+    if (updatedBatch !== undefined) setBatch(b);
+    if (updatedRoster !== undefined) setRoster(r);
+    if (updatedHistory !== undefined) setHistory(h);
+
     if (password) {
-      await encryptAndStore(updated, password);
+      const store: ZecPayStore = {
+        version: 1,
+        currentBatch: b,
+        roster: r,
+        history: h,
+      };
+      await encryptAndStore(store, password);
     }
-  }, [password]);
+  }, [password, batch, roster, history]);
 
   const handleUnlock = useCallback(async (pwd: string) => {
     setPassword(pwd);
@@ -51,16 +82,39 @@ export default function Home() {
 
     try {
       const stored = await decryptFromStore(pwd);
-      if (stored && (stored as PayrollBatch).employees) {
-        const restoredBatch = stored as PayrollBatch;
-        setBatch(restoredBatch);
-        await loadRate();
-        // Check if payroll is due
-        if (restoredBatch.schedule && isPayrollDue(restoredBatch.schedule)) {
-          setScheduleDueBanner(true);
+      if (stored) {
+        if (isZecPayStore(stored)) {
+          // New format
+          if (stored.currentBatch) setBatch(stored.currentBatch);
+          setRoster(stored.roster);
+          setHistory(stored.history);
+          await loadRate();
+          if (stored.currentBatch?.schedule && isPayrollDue(stored.currentBatch.schedule)) {
+            setScheduleDueBanner(true);
+          }
+          setScreen(stored.currentBatch ? 'preview' : 'upload');
+          return;
+        } else if (isLegacyBatch(stored)) {
+          // Legacy migration: wrap in ZecPayStore
+          const legacy = stored as PayrollBatch;
+          setBatch(legacy);
+          setRoster([]);
+          setHistory([]);
+          await loadRate();
+          // Auto-migrate to new format
+          const migratedStore: ZecPayStore = {
+            version: 1,
+            currentBatch: legacy,
+            roster: [],
+            history: [],
+          };
+          await encryptAndStore(migratedStore, pwd);
+          if (legacy.schedule && isPayrollDue(legacy.schedule)) {
+            setScheduleDueBanner(true);
+          }
+          setScreen('preview');
+          return;
         }
-        setScreen('preview');
-        return;
       }
     } catch {
       // No stored data or wrong password
@@ -84,9 +138,9 @@ export default function Home() {
       rateLockTime,
       status: 'preview',
     };
-    await persistBatch(newBatch);
+    await persistStore(newBatch);
     setScreen('preview');
-  }, [zecRate, rateLockTime, persistBatch]);
+  }, [zecRate, rateLockTime, persistStore]);
 
   const handleGenerate = useCallback(() => {
     if (!batch) return;
@@ -98,20 +152,21 @@ export default function Home() {
     setScreen('payment');
   }, [batch, zecRate]);
 
-  const handleNewBatch = useCallback(() => {
+  const handleNewBatch = useCallback(async () => {
     setBatch(null);
     setUri('');
-    clearStoredData();
+    // Only clear currentBatch, preserve roster + history
+    await persistStore(null);
     setScreen('upload');
-  }, []);
+  }, [persistStore]);
 
   const handleUpdateEmployee = useCallback(async (index: number, updates: Partial<Employee>) => {
     if (!batch) return;
     const updatedEmployees = batch.employees.map((emp, i) =>
       i === index ? { ...emp, ...updates } : emp
     );
-    await persistBatch({ ...batch, employees: updatedEmployees });
-  }, [batch, persistBatch]);
+    await persistStore({ ...batch, employees: updatedEmployees });
+  }, [batch, persistStore]);
 
   const handleConfirmPayment = useCallback(async (index: number) => {
     if (!batch) return;
@@ -119,7 +174,7 @@ export default function Home() {
       i === index ? { ...emp, paid: !emp.paid } : emp
     );
     const allPaid = updatedEmployees.every(e => e.paid);
-    await persistBatch({
+    await persistStore({
       ...batch,
       employees: updatedEmployees,
       status: allPaid ? 'executed' : batch.status,
@@ -127,38 +182,85 @@ export default function Home() {
         ? { ...batch.schedule, lastProcessedDate: new Date().toISOString().split('T')[0] }
         : batch.schedule,
     });
-  }, [batch, persistBatch]);
+  }, [batch, persistStore]);
 
   const handleMarkAllPaid = useCallback(async () => {
     if (!batch) return;
     const updatedEmployees = batch.employees.map(emp => ({ ...emp, paid: true }));
-    await persistBatch({
+    const completedBatch: PayrollBatch = {
       ...batch,
       employees: updatedEmployees,
       status: 'executed',
       schedule: batch.schedule
         ? { ...batch.schedule, lastProcessedDate: new Date().toISOString().split('T')[0] }
         : undefined,
-    });
-  }, [batch, persistBatch]);
+    };
+
+    // Compute totals for history record
+    const totalZec = getTotalZec(updatedEmployees, batch.zecUsdRate);
+    const totalUsd = updatedEmployees.reduce(
+      (s, e) => s + (e.currency === 'USD' ? e.amount : e.amount * batch.zecUsdRate), 0
+    );
+    const recordWithoutHash: Omit<BatchRecord, 'hash'> = {
+      batch: completedBatch,
+      completedAt: new Date().toISOString(),
+      totalZec,
+      totalUsd,
+    };
+    const hash = await hashBatchRecord(recordWithoutHash);
+    const record: BatchRecord = { ...recordWithoutHash, hash };
+    const newHistory = [...history, record];
+
+    await persistStore(completedBatch, undefined, newHistory);
+  }, [batch, history, persistStore]);
+
+  const handleSaveRoster = useCallback(async () => {
+    if (!batch) return;
+    const newRoster = employeesToRoster(batch.employees);
+    await persistStore(undefined, newRoster);
+  }, [batch, persistStore]);
+
+  const handleLoadRoster = useCallback(async () => {
+    if (roster.length === 0) return;
+    const employees = rosterToEmployees(roster);
+    await handleParsed(employees);
+  }, [roster, handleParsed]);
+
+  const handleDownloadCurrentReceipt = useCallback(async () => {
+    if (!batch || batch.status !== 'executed') return;
+    // Find the most recent history record for this batch
+    const record = history.find(h => h.batch.id === batch.id);
+    if (record) {
+      downloadReceipt(record);
+    }
+  }, [batch, history]);
 
   const handleSaveSchedule = useCallback(async (schedule: PayrollSchedule) => {
     if (!batch) return;
-    await persistBatch({ ...batch, schedule });
+    await persistStore({ ...batch, schedule });
     setShowScheduleModal(false);
-    // Request notification permission on first schedule save
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-  }, [batch, persistBatch]);
+  }, [batch, persistStore]);
 
   const handleRemoveSchedule = useCallback(async () => {
     if (!batch) return;
     const { schedule: _, ...rest } = batch;
-    await persistBatch(rest as PayrollBatch);
+    await persistStore(rest as PayrollBatch);
     setShowScheduleModal(false);
     setScheduleDueBanner(false);
-  }, [batch, persistBatch]);
+  }, [batch, persistStore]);
+
+  const handleLock = useCallback(() => {
+    // Clear in-memory state only. Encrypted blob stays.
+    setBatch(null);
+    setRoster([]);
+    setHistory([]);
+    setPassword('');
+    setUri('');
+    setScreen('password');
+  }, []);
 
   // Fire browser notification when payroll due
   useEffect(() => {
@@ -200,7 +302,7 @@ export default function Home() {
       <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-amber-400">ZecPay</h1>
-          <span className="text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v0.2</span>
+          <span className="text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v0.3</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-zinc-500">
           {zecRate > 0 && (
@@ -213,8 +315,16 @@ export default function Home() {
           >
             {loading ? '...' : 'Refresh'}
           </button>
+          {history.length > 0 && (
+            <button
+              onClick={() => setScreen('history')}
+              className="hover:text-amber-400 transition"
+            >
+              History ({history.length})
+            </button>
+          )}
           <button
-            onClick={() => { clearStoredData(); setPassword(''); setScreen('password'); }}
+            onClick={handleLock}
             className="hover:text-red-400 transition"
           >
             Lock
@@ -233,20 +343,28 @@ export default function Home() {
       {/* Main */}
       <main className="max-w-2xl mx-auto p-6">
         {/* Steps indicator */}
-        <div className="flex items-center gap-2 mb-6 text-xs text-zinc-600">
-          {['Upload CSV', 'Preview', 'Test', 'Payment'].map((step, i) => {
-            const stepScreens: Screen[] = ['upload', 'preview', 'testmode', 'payment'];
-            const isActive = stepScreens.indexOf(screen) >= i;
-            return (
-              <span key={step} className="flex items-center gap-2">
-                {i > 0 && <span className="text-zinc-800">/</span>}
-                <span className={isActive ? 'text-amber-400' : ''}>{step}</span>
-              </span>
-            );
-          })}
-        </div>
+        {screen !== 'history' && (
+          <div className="flex items-center gap-2 mb-6 text-xs text-zinc-600">
+            {['Upload CSV', 'Preview', 'Test', 'Payment'].map((step, i) => {
+              const stepScreens: Screen[] = ['upload', 'preview', 'testmode', 'payment'];
+              const isActive = stepScreens.indexOf(screen) >= i;
+              return (
+                <span key={step} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-zinc-800">/</span>}
+                  <span className={isActive ? 'text-amber-400' : ''}>{step}</span>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
-        {screen === 'upload' && <CsvUpload onParsed={handleParsed} />}
+        {screen === 'upload' && (
+          <CsvUpload
+            onParsed={handleParsed}
+            roster={roster}
+            onLoadRoster={handleLoadRoster}
+          />
+        )}
         {screen === 'preview' && batch && (
           <BatchPreview
             employees={batch.employees}
@@ -257,6 +375,9 @@ export default function Home() {
             onTestMode={() => setScreen('testmode')}
             schedule={batch.schedule}
             onOpenSchedule={() => setShowScheduleModal(true)}
+            hasRoster={roster.length > 0}
+            onSaveRoster={handleSaveRoster}
+            onQuickPay={roster.length > 0 ? handleGenerate : undefined}
           />
         )}
         {screen === 'testmode' && batch && (
@@ -277,6 +398,16 @@ export default function Home() {
             zecUsdRate={zecRate}
             onConfirmPayment={handleConfirmPayment}
             onMarkAllPaid={handleMarkAllPaid}
+            hasRoster={roster.length > 0}
+            onSaveRoster={handleSaveRoster}
+            onDownloadReceipt={batch.status === 'executed' ? handleDownloadCurrentReceipt : undefined}
+          />
+        )}
+        {screen === 'history' && (
+          <BatchHistory
+            history={history}
+            onBack={() => setScreen(batch ? 'preview' : 'upload')}
+            onDownloadReceipt={downloadReceipt}
           />
         )}
       </main>

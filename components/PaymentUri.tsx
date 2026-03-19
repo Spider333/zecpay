@@ -14,9 +14,12 @@ interface Props {
   zecUsdRate: number;
   onConfirmPayment: (index: number) => void;
   onMarkAllPaid: () => void;
+  hasRoster?: boolean;
+  onSaveRoster?: () => void;
+  onDownloadReceipt?: () => void;
 }
 
-export default function PaymentUri({ uri, onBack, onNewBatch, employees, zecUsdRate, onConfirmPayment, onMarkAllPaid }: Props) {
+export default function PaymentUri({ uri, onBack, onNewBatch, employees, zecUsdRate, onConfirmPayment, onMarkAllPaid, hasRoster, onSaveRoster, onDownloadReceipt }: Props) {
   const [copied, setCopied] = useState(false);
   const [showZodlGuide, setShowZodlGuide] = useState(false);
   const parsed = parseZip321Uri(uri);
@@ -182,6 +185,22 @@ export default function PaymentUri({ uri, onBack, onNewBatch, employees, zecUsdR
           <div className="text-center py-2 text-green-400 text-sm font-medium bg-green-400/5 rounded-lg">
             All payments confirmed
           </div>
+        )}
+        {allPaid && !hasRoster && onSaveRoster && (
+          <button
+            onClick={onSaveRoster}
+            className="w-full text-xs text-amber-400 hover:text-amber-300 py-1"
+          >
+            Save team for next time?
+          </button>
+        )}
+        {allPaid && onDownloadReceipt && (
+          <button
+            onClick={onDownloadReceipt}
+            className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-amber-400 rounded-lg text-sm transition"
+          >
+            Download Receipt
+          </button>
         )}
       </div>
 
