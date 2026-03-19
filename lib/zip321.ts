@@ -93,6 +93,15 @@ function decodeMemo(encoded: string | null): string | undefined {
   }
 }
 
+/**
+ * Generate a ZIP-321 URI for a single test transaction.
+ */
+export function generateTestUri(employee: Employee, testAmountZec = 0.001): string {
+  const memo = `ZecPay test: ${employee.name}`;
+  const encoded = base64urlEncode(memo);
+  return `zcash:?address=${employee.wallet}&amount=${testAmountZec.toFixed(8)}&memo=${encoded}`;
+}
+
 export function getTotalZec(employees: Employee[], zecUsdRate: number): number {
   return employees.reduce((sum, emp) => {
     const zec = emp.currency === 'ZEC' ? emp.amount : usdToZec(emp.amount, zecUsdRate);

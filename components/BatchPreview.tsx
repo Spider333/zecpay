@@ -1,8 +1,9 @@
 'use client';
 
-import { Employee } from '@/lib/types';
+import { Employee, PayrollSchedule } from '@/lib/types';
 import { usdToZec, formatZec } from '@/lib/price';
 import { getTotalZec } from '@/lib/zip321';
+import { formatSchedule, isPayrollDue } from '@/lib/schedule';
 
 interface Props {
   employees: Employee[];
@@ -10,6 +11,9 @@ interface Props {
   rateLockTime: string;
   onGenerate: () => void;
   onBack: () => void;
+  onTestMode: () => void;
+  schedule?: PayrollSchedule;
+  onOpenSchedule: () => void;
 }
 
 function truncateAddr(addr: string): string {
@@ -17,9 +21,10 @@ function truncateAddr(addr: string): string {
   return `${addr.slice(0, 8)}...${addr.slice(-8)}`;
 }
 
-export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGenerate, onBack }: Props) {
+export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGenerate, onBack, onTestMode, schedule, onOpenSchedule }: Props) {
   const totalZec = getTotalZec(employees, zecUsdRate);
   const totalUsd = employees.reduce((s, e) => s + (e.currency === 'USD' ? e.amount : e.amount * zecUsdRate), 0);
+  const due = schedule ? isPayrollDue(schedule) : false;
 
   return (
     <div className="space-y-4">
@@ -31,6 +36,26 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
         </div>
       </div>
 
+      {/* Schedule bar */}
+      {schedule ? (
+        <div className={`flex items-center justify-between rounded-lg px-4 py-2.5 text-sm border ${
+          due ? 'bg-amber-400/10 border-amber-400/30 text-amber-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+        }`}>
+          <div className="flex items-center gap-2">
+            {due && <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />}
+            <span>{due ? 'Payroll due today' : formatSchedule(schedule)}</span>
+          </div>
+          <button onClick={onOpenSchedule} className="text-xs text-amber-400 hover:text-amber-300">Edit</button>
+        </div>
+      ) : (
+        <button
+          onClick={onOpenSchedule}
+          className="w-full text-left text-xs text-zinc-500 hover:text-amber-400 transition py-2"
+        >
+          + Set up payout schedule
+        </button>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -39,7 +64,8 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
               <th className="text-left py-2 pr-4">Wallet</th>
               <th className="text-right py-2 pr-4">Amount</th>
               <th className="text-right py-2 pr-4">ZEC</th>
-              <th className="text-center py-2">Payout</th>
+              <th className="text-center py-2 pr-4">Payout</th>
+              <th className="text-center py-2">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -53,12 +79,19 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
                     {emp.currency === 'USD' ? `$${emp.amount.toFixed(2)}` : `${formatZec(emp.amount)} ZEC`}
                   </td>
                   <td className="py-2.5 pr-4 text-right text-amber-400 font-mono">{formatZec(zec)}</td>
-                  <td className="py-2.5 text-center">
+                  <td className="py-2.5 pr-4 text-center">
                     <span className={`text-xs px-2 py-0.5 rounded ${
                       emp.payoutCurrency === 'ZEC' ? 'bg-amber-400/10 text-amber-400' : 'bg-blue-400/10 text-blue-400'
                     }`}>
                       {emp.payoutCurrency}
                     </span>
+                  </td>
+                  <td className="py-2.5 text-center">
+                    {emp.verified ? (
+                      <span className="text-green-400" title="Verified">&#10003;</span>
+                    ) : (
+                      <span className="text-zinc-600">&ndash;</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -78,12 +111,20 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
         </div>
       </div>
 
-      <button
-        onClick={onGenerate}
-        className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold rounded-lg transition text-lg"
-      >
-        Generate Payment URI
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={onTestMode}
+          className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold rounded-lg transition text-lg"
+        >
+          Test Wallets First
+        </button>
+        <button
+          onClick={onGenerate}
+          className="flex-1 py-3 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-semibold rounded-lg transition text-sm"
+        >
+          Skip Tests &amp; Generate URI
+        </button>
+      </div>
     </div>
   );
 }

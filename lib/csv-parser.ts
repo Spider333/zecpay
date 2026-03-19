@@ -60,6 +60,7 @@ export function parseCSV(text: string): { employees: Employee[]; errors: string[
       payoutCurrency,
       testTxSent: false,
       verified: false,
+      paid: false,
     });
   }
 
