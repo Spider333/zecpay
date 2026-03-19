@@ -25,3 +25,26 @@ export interface PayrollBatch {
   status: 'draft' | 'preview' | 'executed';
   schedule?: PayrollSchedule;
 }
+
+export interface RosterEmployee {
+  name: string;
+  wallet: string;
+  defaultAmount: number;
+  currency: 'USD' | 'ZEC';
+  payoutCurrency: 'ZEC' | 'USDC';
+}
+
+export interface BatchRecord {
+  batch: PayrollBatch;
+  completedAt: string;
+  totalZec: number;
+  totalUsd: number;
+  hash: string;
+}
+
+export interface ZecPayStore {
+  version: 1;
+  currentBatch: PayrollBatch | null;
+  roster: RosterEmployee[];
+  history: BatchRecord[];
+}
