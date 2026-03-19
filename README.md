@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZecPay — Shielded Payroll with Zcash
 
-## Getting Started
+**CSV → Preview → ZIP-321 URI → Copy to Zodl**
 
-First, run the development server:
+ZecPay is a client-side payroll tool that converts a CSV of employees and payment amounts into a valid [ZIP-321](https://zips.z.cash/zip-0321) multi-payment URI. Scan the QR code or copy the URI into a Zcash wallet (like [Zodl](https://zodl.xyz)) to execute a shielded batch payment.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- **CSV import** — Upload a CSV with name, wallet address, amount, currency
+- **Live ZEC/USD rate** — Fetched from CoinGecko, cached 5 min
+- **ZIP-321 multi-payment URIs** — Spec-compliant, works with Zodl and other wallets
+- **QR code** — Scannable payment URI
+- **E2E encryption** — All data encrypted in localStorage with NaCl (tweetnacl). Password-derived key via PBKDF2. Nothing leaves your browser.
+- **Shielded addresses** — Supports `zs...` (Sapling), `u1...` (unified), and `t1...` (transparent)
+
+## How It Works
+
+1. Set a password (encrypts all local data)
+2. Upload a CSV or load the sample
+3. Review the batch: names, amounts, USD→ZEC conversion
+4. Generate the ZIP-321 URI
+5. Copy or scan the QR into your Zcash wallet
+6. Execute the payment
+
+## CSV Format
+
+```csv
+name,wallet,amount,currency,payout_currency
+Alice,zs1abc...,500,USD,ZEC
+Bob,zs1def...,0.5,ZEC,ZEC
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Column | Required | Values |
+|--------|----------|--------|
+| name | Yes | Recipient name |
+| wallet | Yes | Zcash address (zs, u1, or t1) |
+| amount | Yes | Numeric amount |
+| currency | No | `USD` (default) or `ZEC` |
+| payout_currency | No | `ZEC` (default) or `USDC` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What is ZIP-321?
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+[ZIP-321](https://zips.z.cash/zip-0321) defines a URI format for Zcash payment requests, including multi-recipient payments. Format:
 
-## Learn More
+```
+zcash:?address=<addr>&amount=<zec>&address.1=<addr2>&amount.1=<zec2>
+```
 
-To learn more about Next.js, take a look at the following resources:
+This allows a single URI to encode a batch payroll payment that a compatible wallet can execute in one transaction.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- tweetnacl (encryption)
+- qrcode.react (QR generation)
+- CoinGecko API (pricing)
+- 100% client-side — no backend, no server
 
-## Deploy on Vercel
+## Development
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000).
+
+## Deploy
+
+```bash
+# Push to GitHub, then:
+vercel
+```
+
+## License
+
+MIT
