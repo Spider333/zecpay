@@ -25,11 +25,11 @@ export default function ScheduleConfig({ schedule, onSave, onRemove, onClose }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-full max-w-sm mx-4 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="glass rounded-2xl p-6 w-full max-w-sm mx-4 space-y-4 shadow-[0_25px_60px_rgba(0,0,0,0.5)] animate-slide-up">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">Payout Schedule</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white text-xl">&times;</button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white text-xl transition-colors">&times;</button>
         </div>
 
         <div className="space-y-3">
@@ -39,7 +39,7 @@ export default function ScheduleConfig({ schedule, onSave, onRemove, onClose }: 
               type="date"
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)] transition-shadow duration-200"
             />
           </div>
 
@@ -48,7 +48,7 @@ export default function ScheduleConfig({ schedule, onSave, onRemove, onClose }: 
             <select
               value={frequency}
               onChange={e => setFrequency(e.target.value as PayrollSchedule['frequency'])}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)] transition-shadow duration-200"
             >
               <option value="biweekly">Biweekly (every 14 days)</option>
               <option value="monthly">Monthly</option>
@@ -65,7 +65,7 @@ export default function ScheduleConfig({ schedule, onSave, onRemove, onClose }: 
                 max={365}
                 value={customDays}
                 onChange={e => setCustomDays(parseInt(e.target.value) || 30)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 focus:shadow-[0_0_0_3px_rgba(251,191,36,0.1)] transition-shadow duration-200"
               />
             </div>
           )}
@@ -74,14 +74,14 @@ export default function ScheduleConfig({ schedule, onSave, onRemove, onClose }: 
         <div className="flex gap-2">
           <button
             onClick={handleSave}
-            className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold rounded-lg transition text-sm"
+            className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] text-zinc-900 font-semibold rounded-lg transition-all duration-200 text-sm"
           >
             Save Schedule
           </button>
           {schedule && onRemove && (
             <button
               onClick={onRemove}
-              className="px-4 py-2.5 border border-red-800 text-red-400 hover:bg-red-900/30 rounded-lg transition text-sm"
+              className="px-4 py-2.5 border border-red-800 text-red-400 hover:bg-red-900/30 rounded-lg transition-all duration-200 text-sm"
             >
               Remove
             </button>

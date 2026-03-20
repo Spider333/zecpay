@@ -299,18 +299,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
-      <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-sm border-b border-zinc-800/50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-amber-400">ZecPay</h1>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-amber-500 bg-clip-text text-transparent">ZecPay</h1>
           <span className="text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v0.3</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-zinc-500">
           {zecRate > 0 && (
-            <span>ZEC: <span className="text-amber-400 font-mono">${zecRate.toFixed(2)}</span></span>
+            <span className="bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">ZEC: <span className="text-amber-400 font-mono">${zecRate.toFixed(2)}</span></span>
           )}
           <button
             onClick={loadRate}
-            className="hover:text-amber-400 transition"
+            className="hover:text-amber-400 transition-colors"
             title="Refresh rate"
           >
             {loading ? '...' : 'Refresh'}
@@ -318,14 +318,14 @@ export default function Home() {
           {history.length > 0 && (
             <button
               onClick={() => setScreen('history')}
-              className="hover:text-amber-400 transition"
+              className="hover:text-amber-400 transition-colors"
             >
               History ({history.length})
             </button>
           )}
           <button
             onClick={handleLock}
-            className="hover:text-red-400 transition"
+            className="hover:text-red-400 transition-colors"
           >
             Lock
           </button>
@@ -344,13 +344,13 @@ export default function Home() {
       <main className="max-w-2xl mx-auto p-6">
         {/* Steps indicator */}
         {screen !== 'history' && (
-          <div className="flex items-center gap-2 mb-6 text-xs text-zinc-600">
+          <div className="flex items-center gap-3 mb-6 text-xs text-zinc-600">
             {['Upload CSV', 'Preview', 'Test', 'Payment'].map((step, i) => {
               const stepScreens: Screen[] = ['upload', 'preview', 'testmode', 'payment'];
               const isActive = stepScreens.indexOf(screen) >= i;
               return (
-                <span key={step} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-zinc-800">/</span>}
+                <span key={step} className="flex items-center gap-3">
+                  {i > 0 && <span className={`w-1 h-1 rounded-full ${isActive ? 'bg-amber-400' : 'bg-zinc-700'}`} />}
                   <span className={isActive ? 'text-amber-400' : ''}>{step}</span>
                 </span>
               );
@@ -358,58 +358,60 @@ export default function Home() {
           </div>
         )}
 
-        {screen === 'upload' && (
-          <CsvUpload
-            onParsed={handleParsed}
-            roster={roster}
-            onLoadRoster={handleLoadRoster}
-          />
-        )}
-        {screen === 'preview' && batch && (
-          <BatchPreview
-            employees={batch.employees}
-            zecUsdRate={zecRate}
-            rateLockTime={rateLockTime}
-            onGenerate={handleGenerate}
-            onBack={() => setScreen('upload')}
-            onTestMode={() => setScreen('testmode')}
-            schedule={batch.schedule}
-            onOpenSchedule={() => setShowScheduleModal(true)}
-            hasRoster={roster.length > 0}
-            onSaveRoster={handleSaveRoster}
-            onQuickPay={roster.length > 0 ? handleGenerate : undefined}
-          />
-        )}
-        {screen === 'testmode' && batch && (
-          <TestMode
-            employees={batch.employees}
-            zecUsdRate={zecRate}
-            onUpdateEmployee={handleUpdateEmployee}
-            onComplete={handleGenerate}
-            onBack={() => setScreen('preview')}
-          />
-        )}
-        {screen === 'payment' && batch && (
-          <PaymentUri
-            uri={uri}
-            onBack={() => setScreen('preview')}
-            onNewBatch={handleNewBatch}
-            employees={batch.employees}
-            zecUsdRate={zecRate}
-            onConfirmPayment={handleConfirmPayment}
-            onMarkAllPaid={handleMarkAllPaid}
-            hasRoster={roster.length > 0}
-            onSaveRoster={handleSaveRoster}
-            onDownloadReceipt={batch.status === 'executed' ? handleDownloadCurrentReceipt : undefined}
-          />
-        )}
-        {screen === 'history' && (
-          <BatchHistory
-            history={history}
-            onBack={() => setScreen(batch ? 'preview' : 'upload')}
-            onDownloadReceipt={downloadReceipt}
-          />
-        )}
+        <div key={screen} className="animate-fade-in">
+          {screen === 'upload' && (
+            <CsvUpload
+              onParsed={handleParsed}
+              roster={roster}
+              onLoadRoster={handleLoadRoster}
+            />
+          )}
+          {screen === 'preview' && batch && (
+            <BatchPreview
+              employees={batch.employees}
+              zecUsdRate={zecRate}
+              rateLockTime={rateLockTime}
+              onGenerate={handleGenerate}
+              onBack={() => setScreen('upload')}
+              onTestMode={() => setScreen('testmode')}
+              schedule={batch.schedule}
+              onOpenSchedule={() => setShowScheduleModal(true)}
+              hasRoster={roster.length > 0}
+              onSaveRoster={handleSaveRoster}
+              onQuickPay={roster.length > 0 ? handleGenerate : undefined}
+            />
+          )}
+          {screen === 'testmode' && batch && (
+            <TestMode
+              employees={batch.employees}
+              zecUsdRate={zecRate}
+              onUpdateEmployee={handleUpdateEmployee}
+              onComplete={handleGenerate}
+              onBack={() => setScreen('preview')}
+            />
+          )}
+          {screen === 'payment' && batch && (
+            <PaymentUri
+              uri={uri}
+              onBack={() => setScreen('preview')}
+              onNewBatch={handleNewBatch}
+              employees={batch.employees}
+              zecUsdRate={zecRate}
+              onConfirmPayment={handleConfirmPayment}
+              onMarkAllPaid={handleMarkAllPaid}
+              hasRoster={roster.length > 0}
+              onSaveRoster={handleSaveRoster}
+              onDownloadReceipt={batch.status === 'executed' ? handleDownloadCurrentReceipt : undefined}
+            />
+          )}
+          {screen === 'history' && (
+            <BatchHistory
+              history={history}
+              onBack={() => setScreen(batch ? 'preview' : 'upload')}
+              onDownloadReceipt={downloadReceipt}
+            />
+          )}
+        </div>
       </main>
 
       {/* Schedule modal */}
@@ -423,7 +425,7 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-zinc-800 px-6 py-4 text-center text-xs text-zinc-600">
+      <footer className="mt-auto bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800/50 px-6 py-4 text-center text-xs text-zinc-600">
         ZecPay — CSV to ZIP-321 shielded payroll. All data encrypted locally.
       </footer>
     </div>

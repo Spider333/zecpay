@@ -37,11 +37,11 @@ export default function CsvUpload({ onParsed, roster, onLoadRoster }: Props) {
   const loadSample = () => handleFile(SAMPLE_CSV);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-slide-up">
       {roster && roster.length > 0 && onLoadRoster && (
         <button
           onClick={onLoadRoster}
-          className="w-full py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-400/30 text-amber-400 font-semibold rounded-lg text-sm transition"
+          className="w-full py-3 glass rounded-xl hover:-translate-y-0.5 text-amber-400 font-semibold text-sm transition-all duration-200 border-amber-400/30"
         >
           Use saved team ({roster.length} employee{roster.length !== 1 ? 's' : ''})
         </button>
@@ -50,8 +50,8 @@ export default function CsvUpload({ onParsed, roster, onLoadRoster }: Props) {
         onDragOver={e => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-xl p-12 text-center transition cursor-pointer ${
-          dragActive ? 'border-amber-400 bg-amber-400/5' : 'border-zinc-700 hover:border-zinc-500'
+        className={`border-2 border-dashed rounded-2xl p-16 text-center transition-all duration-200 cursor-pointer ${
+          dragActive ? 'border-amber-400 bg-amber-400/5 scale-[1.02]' : 'border-zinc-700 hover:border-zinc-500'
         }`}
         onClick={() => document.getElementById('csv-input')?.click()}
       >
@@ -73,13 +73,13 @@ export default function CsvUpload({ onParsed, roster, onLoadRoster }: Props) {
 
       <button
         onClick={loadSample}
-        className="w-full py-2 border border-zinc-700 text-zinc-400 hover:text-amber-400 hover:border-amber-400/50 rounded-lg text-sm transition"
+        className="w-full py-2 border border-zinc-700 text-zinc-400 hover:text-amber-400 hover:border-amber-400/50 rounded-lg text-sm transition-all duration-200"
       >
         Load sample CSV (demo)
       </button>
 
       {errors.length > 0 && (
-        <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
+        <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 animate-slide-up">
           <p className="text-red-400 text-sm font-medium mb-1">Parse errors:</p>
           {errors.map((err, i) => (
             <p key={i} className="text-red-300 text-xs">{err}</p>

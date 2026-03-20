@@ -30,9 +30,9 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
   const due = schedule ? isPayrollDue(schedule) : false;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-slide-up">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm">&larr; Back</button>
+        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm transition-colors">&larr; Back</button>
         <div className="text-right text-xs text-zinc-500">
           <p>ZEC/USD: <span className="text-amber-400 font-mono">${zecUsdRate.toFixed(2)}</span></p>
           <p>Locked: {new Date(rateLockTime).toLocaleTimeString()}</p>
@@ -75,7 +75,7 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
             {employees.map((emp, i) => {
               const zec = emp.currency === 'ZEC' ? emp.amount : usdToZec(emp.amount, zecUsdRate);
               return (
-                <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-900/50">
+                <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors duration-150">
                   <td className="py-2.5 pr-4 text-white">{emp.name}</td>
                   <td className="py-2.5 pr-4 font-mono text-zinc-400 text-xs">{truncateAddr(emp.wallet)}</td>
                   <td className="py-2.5 pr-4 text-right text-zinc-300">
@@ -103,14 +103,17 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
         </table>
       </div>
 
-      <div className="flex justify-between items-center p-4 bg-zinc-900 rounded-lg border border-zinc-800">
-        <div>
-          <p className="text-xs text-zinc-500 uppercase">Total</p>
-          <p className="text-xl font-bold text-amber-400 font-mono">{formatZec(totalZec)} ZEC</p>
-          <p className="text-xs text-zinc-500">~${totalUsd.toFixed(2)} USD</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-zinc-500">{employees.length} recipients</p>
+      <div className="relative glass rounded-xl p-4 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-xs text-zinc-500 uppercase">Total</p>
+            <p className="text-2xl font-bold text-amber-400 font-mono">{formatZec(totalZec)} ZEC</p>
+            <p className="text-xs text-zinc-500">~${totalUsd.toFixed(2)} USD</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-zinc-500">{employees.length} recipients</p>
+          </div>
         </div>
       </div>
 
@@ -126,13 +129,13 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
       <div className="flex gap-3">
         <button
           onClick={onTestMode}
-          className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold rounded-lg transition text-lg"
+          className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] text-zinc-900 font-semibold rounded-lg transition-all duration-200 text-lg"
         >
           Test Wallets First
         </button>
         <button
           onClick={onGenerate}
-          className="flex-1 py-3 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-semibold rounded-lg transition text-sm"
+          className="flex-1 py-3 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-semibold rounded-lg transition-all duration-200 text-sm"
         >
           Skip Tests &amp; Generate URI
         </button>
@@ -141,7 +144,7 @@ export default function BatchPreview({ employees, zecUsdRate, rateLockTime, onGe
       {onQuickPay && hasRoster && (
         <button
           onClick={onQuickPay}
-          className="w-full py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-400/30 text-green-400 font-medium rounded-lg text-sm transition"
+          className="w-full py-2 bg-green-500/10 hover:bg-green-500/20 hover:shadow-[0_0_15px_rgba(34,197,94,0.15)] border border-green-400/30 text-green-400 font-medium rounded-lg text-sm transition-all duration-200"
         >
           Quick Pay — skip tests, go straight to payment
         </button>
