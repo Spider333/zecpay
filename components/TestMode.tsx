@@ -21,14 +21,14 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
   const allVerified = verifiedCount === employees.length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-slide-up">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm">&larr; Back</button>
+        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm transition-colors">&larr; Back</button>
         <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded">Test Mode</span>
       </div>
 
       {/* Info banner */}
-      <div className="bg-amber-400/5 border border-amber-400/20 rounded-lg p-4 text-sm text-amber-200">
+      <div className="glass rounded-xl p-4 text-sm text-amber-200 border-amber-400/20">
         Send <span className="font-mono font-bold">0.001 ZEC</span> test to each employee to verify wallets before full payout.
       </div>
 
@@ -53,7 +53,7 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
           const isExpanded = expandedQr === i;
 
           return (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+            <div key={i} className="glass rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
                   <p className="text-xs font-mono text-zinc-500 truncate">{emp.wallet}</p>
                   <p className="text-xs text-zinc-400 mt-1">{formatZec(zec)} ZEC (~${(emp.currency === 'USD' ? emp.amount : emp.amount * zecUsdRate).toFixed(2)})</p>
                 </div>
-                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 transition-colors duration-300 ${
                   emp.verified ? 'bg-green-400' : emp.testTxSent ? 'bg-amber-400' : 'bg-zinc-600'
                 }`} />
               </div>
@@ -76,7 +76,7 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   onClick={() => setExpandedQr(isExpanded ? null : i)}
-                  className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition"
+                  className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded transition-colors"
                 >
                   {isExpanded ? 'Hide QR' : 'Show QR'}
                 </button>
@@ -103,7 +103,7 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
 
               {/* QR */}
               {isExpanded && (
-                <div className="flex justify-center p-4 bg-white rounded-lg">
+                <div className="flex justify-center p-4 bg-white rounded-lg shadow-[0_0_30px_rgba(0,0,0,0.2)]">
                   <QRCodeSVG value={generateTestUri(emp)} size={180} level="M" />
                 </div>
               )}
@@ -116,9 +116,9 @@ export default function TestMode({ employees, zecUsdRate, onUpdateEmployee, onCo
       <button
         onClick={onComplete}
         disabled={!allVerified}
-        className={`w-full py-3 font-semibold rounded-lg transition text-lg ${
+        className={`w-full py-3 font-semibold rounded-lg transition-all duration-200 text-lg ${
           allVerified
-            ? 'bg-green-500 hover:bg-green-400 text-zinc-900'
+            ? 'bg-green-500 hover:bg-green-400 hover:shadow-[0_0_20px_rgba(34,197,94,0.25)] text-zinc-900'
             : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
         }`}
       >

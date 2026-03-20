@@ -15,8 +15,8 @@ export default function BatchHistory({ history, onBack, onDownloadReceipt }: Pro
 
   if (history.length === 0) {
     return (
-      <div className="space-y-4">
-        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm">&larr; Back</button>
+      <div className="space-y-4 animate-fade-in">
+        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm transition-colors">&larr; Back</button>
         <div className="text-center py-16">
           <p className="text-zinc-500 text-lg mb-2">No completed payrolls yet</p>
           <p className="text-zinc-600 text-sm">Completed batches will appear here with downloadable receipts.</p>
@@ -26,9 +26,9 @@ export default function BatchHistory({ history, onBack, onDownloadReceipt }: Pro
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm">&larr; Back</button>
+        <button onClick={onBack} className="text-zinc-400 hover:text-white text-sm transition-colors">&larr; Back</button>
         <span className="text-xs text-zinc-500">{history.length} batch{history.length !== 1 ? 'es' : ''}</span>
       </div>
 
@@ -37,10 +37,10 @@ export default function BatchHistory({ history, onBack, onDownloadReceipt }: Pro
           const date = new Date(record.completedAt);
           const isExpanded = expanded === i;
           return (
-            <div key={record.batch.id + i} className="border border-zinc-800 rounded-lg overflow-hidden">
+            <div key={record.batch.id + i} className="glass rounded-xl overflow-hidden">
               <button
                 onClick={() => setExpanded(isExpanded ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800/80 transition text-left"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-800/30 transition-colors text-left"
               >
                 <div>
                   <p className="text-sm text-white">
@@ -54,7 +54,7 @@ export default function BatchHistory({ history, onBack, onDownloadReceipt }: Pro
                 </div>
               </button>
               {isExpanded && (
-                <div className="px-4 py-3 border-t border-zinc-800 space-y-2">
+                <div className="px-4 py-3 border-t border-zinc-800/50 space-y-2 animate-slide-up">
                   {record.batch.employees.map((emp, j) => (
                     <div key={j} className="flex justify-between text-xs text-zinc-400">
                       <span>{emp.name}</span>
@@ -67,10 +67,10 @@ export default function BatchHistory({ history, onBack, onDownloadReceipt }: Pro
                     </div>
                   ))}
                   <div className="pt-2 flex items-center justify-between border-t border-zinc-800/50">
-                    <span className="text-xs text-zinc-600 font-mono">#{record.hash.slice(0, 12)}...</span>
+                    <span className="text-xs text-zinc-600 font-mono bg-zinc-950/50 px-2 py-0.5 rounded">#{record.hash.slice(0, 12)}...</span>
                     <button
                       onClick={() => onDownloadReceipt(record)}
-                      className="text-xs text-amber-400 hover:text-amber-300"
+                      className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
                     >
                       Download Receipt
                     </button>
